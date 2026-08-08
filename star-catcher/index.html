@@ -1,0 +1,66 @@
+<!doctype html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>별빛 수집가</title>
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <main class="app-shell">
+    <section class="game-panel" aria-labelledby="game-title">
+      <header class="topbar">
+        <div>
+          <p class="eyebrow">NIGHT SHIFT / 01</p>
+          <h1 id="game-title">별빛 수집가</h1>
+        </div>
+        <div class="topbar-tools">
+          <button class="music-toggle" id="musicToggle" type="button" aria-pressed="true">♫ BGM ON</button>
+          <div class="status-dot" aria-label="게임 상태"></div>
+        </div>
+      </header>
+
+      <div class="hud" aria-label="게임 기록">
+        <div class="hud-item"><span>점수</span><strong id="score">0000</strong></div>
+        <div class="hud-item"><span>남은 시간</span><strong id="time">60</strong><small>SEC</small></div>
+        <div class="hud-item best"><span>최고 기록</span><strong id="best">0000</strong></div>
+      </div>
+
+      <div class="canvas-wrap">
+        <canvas id="gameCanvas" width="900" height="560" aria-label="별을 모으는 게임 화면"></canvas>
+        <div class="game-message" id="gameMessage">
+          <p class="message-kicker">MIDNIGHT FIELD</p>
+          <h2 id="messageTitle">별빛을 모아보세요</h2>
+          <p id="messageText">움직이는 별을 클릭하거나 마우스로 따라가세요.</p>
+          <form class="score-form" id="scoreForm">
+            <label for="nameInput">이름을 남겨주세요</label>
+            <div class="name-row">
+              <input id="nameInput" name="name" maxlength="12" autocomplete="off" placeholder="플레이어" required>
+              <button type="submit">기록하기 <span>↗</span></button>
+            </div>
+          </form>
+          <button id="startButton" type="button">게임 시작 <span>↗</span></button>
+        </div>
+      </div>
+
+      <section class="leaderboard" aria-labelledby="leaderboardTitle">
+        <div class="leaderboard-heading">
+          <div>
+            <p class="eyebrow">THE NIGHT LIST</p>
+            <h2 id="leaderboardTitle">TOP 10</h2>
+          </div>
+          <span>BEST RUNS</span>
+        </div>
+        <ol id="leaderboardList" aria-label="최고 점수 순위"></ol>
+      </section>
+
+      <footer class="controls">
+        <span><kbd>←</kbd><kbd>→</kbd> 이동</span>
+        <span><kbd>클릭</kbd> 별 수집</span>
+        <span class="tip">빨간 별은 -15점, 나머지는 점수를 줍니다.</span>
+      </footer>
+    </section>
+  </main>
+  <script src="game.js"></script>
+</body>
+</html>
