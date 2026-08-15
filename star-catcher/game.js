@@ -15,7 +15,7 @@ const musicToggle = document.querySelector('#musicToggle');
 
 const width = canvas.width;
 const height = canvas.height;
-const keys = { left: false, right: false };
+const keys = { left: false, right: false, shoot: false };
 let score = 0;
 let timeLeft = 60;
 let playing = false;
@@ -24,6 +24,8 @@ let timer = 0;
 let spawnTimer = 0;
 let stars = [];
 let particles = [];
+let missiles = [];
+let shotCooldown = 0;
 let audioContext;
 let musicTimer;
 let musicStep = 0;
@@ -217,11 +219,29 @@ function drawParticles(delta) {
   ctx.globalAlpha = 1;
 }
 
-function collectAt(x, y) {
-  if (!playing) return;
-  const hitIndex = stars.findIndex(star => Math.hypot(star.x - x, star.y - y) < star.radius + 18);
-  if (hitIndex < 0) return;
-  const [star] = stars.splice(hitIndex, 1);
+function shootMissile() {
+  if (!playing || shotCooldown > 0) return;
+  missiles.push({ x: player.x, y: player.y - 30, speed: 620 });
+  shotCooldown = .18;
+}
+
+function drawMissiles() {
+  ctx.save();
+  missiles.forEach(missile => {
+    const glow = ctx.createLinearGradient(missile.x, missile.y, missile.x, missile.y + 22);
+    glow.addColorStop(0, '#f4f0e8');
+    glow.addColorStop(.35, '#d7f171');
+    glow.addColorStop(1, 'rgba(215, 241, 113, 0)');
+    ctx.shadowColor = '#d7f171';
+    ctx.shadowBlur = 14;
+    ctx.fillStyle = glow;
+    ctx.fillRect(missile.x - 2, missile.y, 4, 22);
+  });
+  ctx.restore();
+}
+
+function hitStar(starIndex) {
+  const [star] = stars.splice(starIndex, 1);
   playStarSound(star);
   score = Math.max(0, score + star.value);
   scoreEl.textContent = String(score).padStart(4, '0');
@@ -234,7 +254,7 @@ function pointerPosition(event) {
 }
 
 function startGame() {
-  score = 0; timeLeft = 60; timer = 0; spawnTimer = 0; stars = []; particles = [];
+  score = 0; timeLeft = 60; timer = 0; spawnTimer = 0; stars = []; particles = []; missiles = []; shotCooldown = 0;
   scoreEl.textContent = '0000'; timeEl.textContent = '60';
   playing = true; statusDot.classList.add('live'); message.classList.add('hidden');
   scoreForm.classList.remove('visible');
@@ -280,6 +300,21 @@ function update(delta) {
   if (spawnTimer > .9) { spawnTimer = 0; spawnStar(); }
   if (keys.left) player.targetX -= 420 * delta;
   if (keys.right) player.targetX += 420 * delta;
+  shotCooldown = Math.max(0, shotCooldown - delta);
+  if (keys.shoot) shootMissile();
+  missiles.forEach(missile => { missile.y -= missile.speed * delta; });
+  missiles = missiles.filter(missile => missile.y > -30);
+  for (let missileIndex = missiles.length - 1; missileIndex >= 0; missileIndex--) {
+    const missile = missiles[missileIndex];
+    const starIndex = stars.findIndex(star =>
+      Math.abs(star.x - missile.x) < star.radius + 5 &&
+      Math.abs(star.y - missile.y) < star.radius + 15
+    );
+    if (starIndex >= 0) {
+      missiles.splice(missileIndex, 1);
+      hitStar(starIndex);
+    }
+  }
   player.targetX = Math.max(28, Math.min(width - 28, player.targetX));
   stars.forEach(star => { star.life += delta; });
   stars = stars.filter(star => star.life < star.duration);
@@ -288,6 +323,7 @@ function update(delta) {
 function draw(delta) {
   drawBackground(delta);
   stars.forEach(drawStar);
+  drawMissiles();
   drawParticles(delta);
   drawPlayer();
   requestAnimationFrame(frame);
@@ -300,7 +336,7 @@ function frame(now) {
 }
 
 canvas.addEventListener('pointermove', event => { player.targetX = pointerPosition(event).x; });
-canvas.addEventListener('pointerdown', event => { const point = pointerPosition(event); player.targetX = point.x; collectAt(point.x, point.y); });
+canvas.addEventListener('pointerdown', event => { player.targetX = pointerPosition(event).x; });
 startButton.addEventListener('click', startGame);
 scoreForm.addEventListener('submit', event => { event.preventDefault(); saveScore(); });
 musicToggle.addEventListener('click', () => {
@@ -314,11 +350,20 @@ musicToggle.addEventListener('click', () => {
 window.addEventListener('keydown', event => {
   if (event.key === 'ArrowLeft') keys.left = true;
   if (event.key === 'ArrowRight') keys.right = true;
-  if (event.key === ' ' && !playing) startGame();
+  if (event.code === 'Space') {
+    event.preventDefault();
+    if (playing) {
+      keys.shoot = true;
+      shootMissile();
+    } else if (!scoreForm.classList.contains('visible')) {
+      startGame();
+    }
+  }
 });
 window.addEventListener('keyup', event => {
   if (event.key === 'ArrowLeft') keys.left = false;
   if (event.key === 'ArrowRight') keys.right = false;
+  if (event.code === 'Space') keys.shoot = false;
 });
 
 requestAnimationFrame(frame);
